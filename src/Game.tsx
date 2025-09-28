@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 
-type GameState = 'menu' | 'settings' | 'levelSelect' | 'playing' | 'paused' | 'victory' | 'gameOver'
+type GameState = 'loading' | 'menu' | 'settings' | 'levelSelect' | 'playing' | 'paused' | 'victory' | 'gameOver'
 
 interface Player { x: number; y: number; health: number; stones: number; speed: number; stamina: number; attackCooldown: number; lives: number; hasAxe: boolean }
 interface Enemy { id: number; x: number; y: number; speed: number; type: 'chaser' | 'wanderer' | 'boss'; health: number; size: number; direction?: number }
@@ -29,7 +29,7 @@ export default function Game() {
   const VIRTUAL_HEIGHT = 600
   const [canvasSize, setCanvasSize] = useState<{width:number;height:number}>({ width: VIRTUAL_WIDTH, height: VIRTUAL_HEIGHT })
   const pausedBySystemRef = useRef(false)
-  const [gameState, setGameState] = useState<GameState>('menu')
+  const [gameState, setGameState] = useState<GameState>('loading')
   const [currentLevel, setCurrentLevel] = useState(0)
   const [graphicsQuality, setGraphicsQuality] = useState<'low' | 'medium' | 'high'>('medium')
   const [player, setPlayer] = useState<Player>({ x: 400, y: 300, health: 100, stones: 0, speed: 2, stamina: 100, attackCooldown: 0, lives: 3, hasAxe: false })
@@ -222,6 +222,16 @@ export default function Game() {
   const [joystickStart, setJoystickStart] = useState<{ x: number; y: number } | null>(null)
   const [joystickPos, setJoystickPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
   useEffect(() => { const mq = window.matchMedia('(pointer: coarse)'); setIsTouchMode(mq.matches) }, [])
+
+  // Auto-transition from loading to menu after 3 seconds
+  useEffect(() => {
+    if (gameState === 'loading') {
+      const timer = setTimeout(() => {
+        setGameState('menu')
+      }, 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [gameState])
 
   useEffect(() => {
     // Responsive canvas: maintain 4:3 aspect and fit within viewport
@@ -694,36 +704,427 @@ export default function Game() {
     ctx.restore()
   }, [gameState, player, enemies, stones, trees, particles, camera, mousePos, gameTime, currentLevel, levels, bgPattern, healthPickups, axePickups])
 
+  if (gameState === 'loading') {
+    return (
+      <div style={{ 
+        minHeight: '100vh', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        background: 'linear-gradient(135deg, #0a0a0a 0%, #1a0b2e 25%, #2d1b69 50%, #111827 75%, #000000 100%)',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        {/* Animated background particles */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: `
+            radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+            radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%)
+          `,
+          animation: 'float 6s ease-in-out infinite'
+        }} />
+        
+        <div style={{ 
+          textAlign: 'center', 
+          zIndex: 1,
+          maxWidth: '90vw',
+          padding: '2rem'
+        }}>
+          {/* WIPER SPACE Logo */}
+          <div style={{ 
+            marginBottom: '2rem',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '1rem'
+          }}>
+            <img 
+              src="/logoo.png" 
+              alt="WIPER SPACE Logo" 
+              style={{ 
+                maxWidth: '400px',
+                width: '100%',
+                height: 'auto',
+                filter: 'drop-shadow(0 0 30px rgba(255, 255, 255, 0.4))',
+                animation: 'logoGlow 2s ease-in-out infinite alternate'
+              }}
+            />
+            <p style={{ 
+              color: '#d1d5db',
+              fontSize: 'clamp(1rem, 3vw, 1.25rem)',
+              fontStyle: 'italic',
+              margin: 0,
+              animation: 'fadeInUp 1s ease-out 0.5s both'
+            }}>
+              Presented by Wiberspace Team
+            </p>
+          </div>
+          
+          {/* Loading animation */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: '0.5rem',
+            marginTop: '2rem'
+          }}>
+            <div style={{
+              width: '12px',
+              height: '12px',
+              borderRadius: '50%',
+              background: 'linear-gradient(45deg, #a855f7, #ffffff)',
+              animation: 'loadingBounce 1.4s ease-in-out infinite both'
+            }}></div>
+            <div style={{
+              width: '12px',
+              height: '12px',
+              borderRadius: '50%',
+              background: 'linear-gradient(45deg, #a855f7, #ffffff)',
+              animation: 'loadingBounce 1.4s ease-in-out infinite both 0.2s'
+            }}></div>
+            <div style={{
+              width: '12px',
+              height: '12px',
+              borderRadius: '50%',
+              background: 'linear-gradient(45deg, #a855f7, #ffffff)',
+              animation: 'loadingBounce 1.4s ease-in-out infinite both 0.4s'
+            }}></div>
+          </div>
+          
+          <p style={{
+            color: '#9ca3af',
+            fontSize: 'clamp(0.875rem, 2.5vw, 1rem)',
+            marginTop: '1rem',
+            animation: 'fadeInUp 1s ease-out 1s both'
+          }}>
+            Loading Horror Islands...
+          </p>
+        </div>
+        
+        <style>{`
+          @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+          }
+          @keyframes logoGlow {
+            0% { 
+              filter: drop-shadow(0 0 30px rgba(255, 255, 255, 0.4));
+              transform: scale(1);
+            }
+            100% { 
+              filter: drop-shadow(0 0 40px rgba(255, 255, 255, 0.6));
+              transform: scale(1.02);
+            }
+          }
+          @keyframes fadeInUp {
+            0% {
+              opacity: 0;
+              transform: translateY(20px);
+            }
+            100% {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+          @keyframes loadingBounce {
+            0%, 80%, 100% {
+              transform: scale(0);
+            }
+            40% {
+              transform: scale(1);
+            }
+          }
+        `}</style>
+      </div>
+    )
+  }
+
   if (gameState === 'menu') {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(to bottom, #4c1d95, #111827, #000)' }}>
-        <div style={{ textAlign: 'center' }}>
-          <h1 style={{ color: 'white', fontWeight: 800, fontSize: 56, marginBottom: 16 }}>HORROR ISLANDS</h1>
-          <p style={{ color: '#d1d5db', marginBottom: 24 }}>Survive the nightmare. Collect the stones. Escape.</p>
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-            <button onClick={() => setGameState('levelSelect')} style={{ padding: '12px 24px', fontSize: 18 }}>PLAY</button>
-            <button onClick={() => setGameState('settings')} style={{ padding: '12px 24px', fontSize: 18 }}>SETTINGS</button>
+      <div style={{ 
+        minHeight: '100vh', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        background: 'linear-gradient(135deg, #1a0b2e 0%, #4c1d95 25%, #2d1b69 50%, #111827 75%, #000000 100%)',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        {/* Animated background particles */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: `
+            radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+            radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%)
+          `,
+          animation: 'float 6s ease-in-out infinite'
+        }} />
+        
+        <div style={{ 
+          textAlign: 'center', 
+          zIndex: 1,
+          maxWidth: '90vw',
+          padding: '2rem'
+        }}>
+          <h1 style={{ 
+            color: 'white', 
+            fontWeight: 900, 
+            fontSize: 'clamp(2.5rem, 8vw, 4rem)', 
+            marginBottom: '1rem',
+            textShadow: '0 0 20px rgba(255, 255, 255, 0.5)',
+            letterSpacing: '0.1em',
+            background: 'linear-gradient(45deg, #ffffff, #a855f7, #ffffff)',
+            backgroundSize: '200% 200%',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            animation: 'gradientShift 3s ease-in-out infinite'
+          }}>
+            HORROR ISLANDS
+          </h1>
+          <p style={{ 
+            color: '#d1d5db', 
+            marginBottom: '3rem',
+            fontSize: 'clamp(1rem, 3vw, 1.25rem)',
+            maxWidth: '600px',
+            margin: '0 auto 3rem auto',
+            lineHeight: '1.6'
+          }}>
+            Survive the nightmare. Collect the stones. Escape.
+          </p>
+          <div style={{ 
+            display: 'flex', 
+            gap: '1rem', 
+            justifyContent: 'center',
+            flexWrap: 'wrap'
+          }}>
+            <button 
+              onClick={() => setGameState('levelSelect')} 
+              style={{ 
+                padding: '1rem 2rem', 
+                fontSize: '1.125rem',
+                fontWeight: '600',
+                background: 'linear-gradient(45deg, #10b981, #059669)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                boxShadow: '0 4px 15px rgba(16, 185, 129, 0.3)',
+                minWidth: '140px'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(16, 185, 129, 0.4)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 4px 15px rgba(16, 185, 129, 0.3)';
+              }}
+            >
+              PLAY
+            </button>
+            <button 
+              onClick={() => setGameState('settings')} 
+              style={{ 
+                padding: '1rem 2rem', 
+                fontSize: '1.125rem',
+                fontWeight: '600',
+                background: 'linear-gradient(45deg, #6b7280, #4b5563)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                boxShadow: '0 4px 15px rgba(107, 114, 128, 0.3)',
+                minWidth: '140px'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(107, 114, 128, 0.4)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 4px 15px rgba(107, 114, 128, 0.3)';
+              }}
+            >
+              SETTINGS
+            </button>
           </div>
         </div>
+        
+        <style>{`
+          @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+          }
+          @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+          }
+        `}</style>
       </div>
     )
   }
 
   if (gameState === 'settings') {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(to bottom, #4c1d95, #111827, #000)' }}>
-        <div style={{ width: 400, background: '#1f2937', color: 'white', padding: 16, borderRadius: 8 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span>Settings</span>
-            <button onClick={() => setGameState('menu')}>X</button>
+      <div style={{ 
+        minHeight: '100vh', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        background: 'linear-gradient(135deg, #1a0b2e 0%, #4c1d95 25%, #2d1b69 50%, #111827 75%, #000000 100%)',
+        padding: '1rem'
+      }}>
+        <div style={{ 
+          width: '100%', 
+          maxWidth: '500px', 
+          background: 'rgba(31, 41, 55, 0.95)', 
+          color: 'white', 
+          padding: '2rem', 
+          borderRadius: '16px',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)'
+        }}>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            marginBottom: '2rem'
+          }}>
+            <h2 style={{ 
+              fontSize: '1.5rem', 
+              fontWeight: '700',
+              margin: 0,
+              background: 'linear-gradient(45deg, #ffffff, #a855f7)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent'
+            }}>
+              Settings
+            </h2>
+            <button 
+              onClick={() => setGameState('menu')} 
+              style={{ 
+                background: 'rgba(239, 68, 68, 0.2)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                color: '#ef4444',
+                padding: '0.5rem',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '1.25rem',
+                width: '40px',
+                height: '40px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.3)';
+                e.currentTarget.style.transform = 'scale(1.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)';
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+            >
+              ×
+            </button>
           </div>
-          <div style={{ marginTop: 16 }}>
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ display: 'block', marginBottom: 8 }}>Graphics Quality</label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+          <div>
+            <div style={{ marginBottom: '2rem' }}>
+              <label style={{ 
+                display: 'block', 
+                marginBottom: '1rem',
+                fontSize: '1.125rem',
+                fontWeight: '600',
+                color: '#d1d5db'
+              }}>
+                Graphics Quality
+              </label>
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(3, 1fr)', 
+                gap: '0.75rem' 
+              }}>
                 {(['low','medium','high'] as const).map(q => (
-                  <button key={q} onClick={() => setGraphicsQuality(q)} style={{ padding: 8, background: graphicsQuality === q ? '#374151' : '#111827', color: 'white' }}>{q}</button>
+                  <button 
+                    key={q} 
+                    onClick={() => setGraphicsQuality(q)} 
+                    style={{ 
+                      padding: '0.75rem 1rem', 
+                      background: graphicsQuality === q 
+                        ? 'linear-gradient(45deg, #10b981, #059669)' 
+                        : 'rgba(17, 24, 39, 0.8)', 
+                      color: 'white',
+                      border: graphicsQuality === q 
+                        ? 'none' 
+                        : '1px solid rgba(75, 85, 99, 0.5)',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      textTransform: 'capitalize',
+                      transition: 'all 0.3s ease',
+                      boxShadow: graphicsQuality === q 
+                        ? '0 4px 15px rgba(16, 185, 129, 0.3)' 
+                        : 'none'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (graphicsQuality !== q) {
+                        e.currentTarget.style.background = 'rgba(75, 85, 99, 0.3)';
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (graphicsQuality !== q) {
+                        e.currentTarget.style.background = 'rgba(17, 24, 39, 0.8)';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                      }
+                    }}
+                  >
+                    {q}
+                  </button>
                 ))}
+              </div>
+            </div>
+            
+            <div style={{ marginBottom: '2rem' }}>
+              <label style={{ 
+                display: 'block', 
+                marginBottom: '1rem',
+                fontSize: '1.125rem',
+                fontWeight: '600',
+                color: '#d1d5db'
+              }}>
+                Controls
+              </label>
+              <div style={{ 
+                background: 'rgba(17, 24, 39, 0.5)',
+                padding: '1rem',
+                borderRadius: '8px',
+                fontSize: '0.875rem',
+                lineHeight: '1.6',
+                color: '#9ca3af'
+              }}>
+                <div><strong>WASD:</strong> Move</div>
+                <div><strong>Shift:</strong> Sprint</div>
+                <div><strong>Mouse:</strong> Look around</div>
+                <div><strong>Space:</strong> Chop trees (with axe)</div>
+                <div><strong>Click:</strong> Shoot (with gun)</div>
+                <div><strong>ESC:</strong> Pause</div>
               </div>
             </div>
           </div>
@@ -734,28 +1135,183 @@ export default function Game() {
 
   if (gameState === 'levelSelect') {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(to bottom, #4c1d95, #111827, #000)' }}>
-        <div style={{ width: '100%', maxWidth: 900 }}>
-          <div style={{ textAlign: 'center', marginBottom: 24 }}>
-            <h2 style={{ fontSize: 32, color: 'white', fontWeight: 800 }}>Choose Your Nightmare</h2>
+      <div style={{ 
+        minHeight: '100vh', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        background: 'linear-gradient(135deg, #1a0b2e 0%, #4c1d95 25%, #2d1b69 50%, #111827 75%, #000000 100%)',
+        padding: '1rem'
+      }}>
+        <div style={{ 
+          width: '100%', 
+          maxWidth: '1200px',
+          padding: '2rem'
+        }}>
+          <div style={{ 
+            textAlign: 'center', 
+            marginBottom: '3rem' 
+          }}>
+            <h2 style={{ 
+              fontSize: 'clamp(1.5rem, 5vw, 2.5rem)', 
+              color: 'white', 
+              fontWeight: 900,
+              marginBottom: '0.5rem',
+              background: 'linear-gradient(45deg, #ffffff, #a855f7, #ffffff)',
+              backgroundSize: '200% 200%',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              animation: 'gradientShift 3s ease-in-out infinite'
+            }}>
+              Choose Your Nightmare
+            </h2>
+            <p style={{ 
+              color: '#d1d5db',
+              fontSize: 'clamp(0.875rem, 2.5vw, 1rem)',
+              maxWidth: '600px',
+              margin: '0 auto'
+            }}>
+              Select a level to begin your survival journey
+            </p>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12 }}>
+          
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
+            gap: '1.5rem',
+            marginBottom: '2rem'
+          }}>
             {levels.map((level, index) => {
               const isUnlocked = level.unlocked || index === 0
+              const isCompleted = level.completed
               return (
-                <div key={level.id} onClick={() => { if (isUnlocked) { setCurrentLevel(index); initializeLevel(index); setGameState('playing') } }} style={{ padding: 12, borderRadius: 8, background: isUnlocked ? '#1f2937' : '#0f172a', color: 'white', cursor: isUnlocked ? 'pointer' : 'not-allowed' }}>
-                  <div style={{ textAlign: 'center', fontSize: 14 }}>{isUnlocked ? level.name : 'Locked'}</div>
+                <div 
+                  key={level.id} 
+                  onClick={() => { if (isUnlocked) { setCurrentLevel(index); initializeLevel(index); setGameState('playing') } }} 
+                  style={{ 
+                    padding: '1.5rem', 
+                    borderRadius: '16px', 
+                    background: isUnlocked 
+                      ? isCompleted 
+                        ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(31, 41, 55, 0.9))'
+                        : 'linear-gradient(135deg, rgba(31, 41, 55, 0.9), rgba(17, 24, 39, 0.8))'
+                      : 'linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(2, 6, 23, 0.9))', 
+                    color: 'white', 
+                    cursor: isUnlocked ? 'pointer' : 'not-allowed',
+                    border: isUnlocked 
+                      ? isCompleted 
+                        ? '2px solid rgba(16, 185, 129, 0.5)'
+                        : '2px solid rgba(75, 85, 99, 0.3)'
+                      : '2px solid rgba(75, 85, 99, 0.1)',
+                    backdropFilter: 'blur(10px)',
+                    transition: 'all 0.3s ease',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (isUnlocked) {
+                      e.currentTarget.style.transform = 'translateY(-4px)';
+                      e.currentTarget.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.3)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (isUnlocked) {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }
+                  }}
+                >
+                  {isCompleted && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '1rem',
+                      right: '1rem',
+                      background: 'linear-gradient(45deg, #10b981, #059669)',
+                      color: 'white',
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '6px',
+                      fontSize: '0.75rem',
+                      fontWeight: '600'
+                    }}>
+                      ✓ COMPLETED
+                    </div>
+                  )}
+                  
+                  <div style={{ 
+                    textAlign: 'center', 
+                    fontSize: '1.25rem',
+                    fontWeight: '700',
+                    marginBottom: '1rem',
+                    color: isUnlocked ? 'white' : '#6b7280'
+                  }}>
+                    {isUnlocked ? level.name : '🔒 Locked'}
+                  </div>
+                  
                   {isUnlocked && (
-                    <div style={{ textAlign: 'center', color: '#9ca3af', fontSize: 12 }}>
-                      {level.enemyCount} Enemies • {level.stoneCount} Stones • {level.weather} • {level.timeOfDay}
+                    <div style={{ 
+                      textAlign: 'center', 
+                      color: '#9ca3af', 
+                      fontSize: '0.875rem',
+                      lineHeight: '1.6'
+                    }}>
+                      <div style={{ marginBottom: '0.5rem' }}>
+                        <span style={{ color: '#ef4444', fontWeight: '600' }}>{level.enemyCount}</span> Enemies
+                      </div>
+                      <div style={{ marginBottom: '0.5rem' }}>
+                        <span style={{ color: '#fbbf24', fontWeight: '600' }}>{level.stoneCount}</span> Stones
+                      </div>
+                      <div style={{ marginBottom: '0.5rem' }}>
+                        <span style={{ color: '#60a5fa', fontWeight: '600' }}>{level.weather}</span> Weather
+                      </div>
+                      <div>
+                        <span style={{ color: '#a78bfa', fontWeight: '600' }}>{level.timeOfDay}</span> Time
+                      </div>
+                    </div>
+                  )}
+                  
+                  {!isUnlocked && (
+                    <div style={{
+                      textAlign: 'center',
+                      color: '#6b7280',
+                      fontSize: '0.875rem',
+                      fontStyle: 'italic'
+                    }}>
+                      Complete previous levels to unlock
                     </div>
                   )}
                 </div>
               )
             })}
           </div>
-          <div style={{ textAlign: 'center', marginTop: 16 }}>
-            <button onClick={() => setGameState('menu')}>Back to Menu</button>
+          
+          <div style={{ 
+            textAlign: 'center'
+          }}>
+            <button 
+              onClick={() => setGameState('menu')}
+              style={{
+                padding: '0.75rem 2rem',
+                fontSize: '1rem',
+                fontWeight: '600',
+                background: 'linear-gradient(45deg, #6b7280, #4b5563)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                boxShadow: '0 4px 15px rgba(107, 114, 128, 0.3)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(107, 114, 128, 0.4)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 4px 15px rgba(107, 114, 128, 0.3)';
+              }}
+            >
+              ← Back to Menu
+            </button>
           </div>
         </div>
       </div>
@@ -764,65 +1320,420 @@ export default function Game() {
 
   if (gameState === 'victory') {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(to bottom, #065f46, #111827, #000)' }}>
-        <div style={{ background: '#1f2937', color: 'white', padding: 16, borderRadius: 8 }}>
-          <div style={{ fontWeight: 700, marginBottom: 8 }}>Level Complete!</div>
-          <div style={{ marginBottom: 12 }}>You survived {levels[currentLevel].name}!</div>
-          <div style={{ display: 'flex', gap: 8 }}>
+      <div style={{ 
+        minHeight: '100vh', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        background: 'linear-gradient(135deg, #064e3b 0%, #065f46 25%, #047857 50%, #111827 75%, #000000 100%)',
+        padding: '1rem'
+      }}>
+        <div style={{ 
+          background: 'rgba(31, 41, 55, 0.95)', 
+          color: 'white', 
+          padding: '3rem 2rem', 
+          borderRadius: '20px',
+          backdropFilter: 'blur(10px)',
+          border: '2px solid rgba(16, 185, 129, 0.3)',
+          boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
+          textAlign: 'center',
+          maxWidth: '500px',
+          width: '100%'
+        }}>
+          <div style={{ 
+            fontSize: '4rem', 
+            marginBottom: '1rem',
+            animation: 'bounce 1s ease-in-out'
+          }}>
+            🎉
+          </div>
+          <div style={{ 
+            fontWeight: 800, 
+            marginBottom: '1rem',
+            fontSize: '2rem',
+            background: 'linear-gradient(45deg, #10b981, #059669)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent'
+          }}>
+            Level Complete!
+          </div>
+          <div style={{ 
+            marginBottom: '2rem',
+            fontSize: '1.125rem',
+            color: '#d1d5db'
+          }}>
+            You survived <strong style={{ color: '#10b981' }}>{levels[currentLevel].name}</strong>!
+          </div>
+          <div style={{ 
+            display: 'flex', 
+            gap: '1rem',
+            flexWrap: 'wrap',
+            justifyContent: 'center'
+          }}>
             {currentLevel < levels.length - 1 ? (
-              <button onClick={() => { setCurrentLevel(prev => prev + 1); initializeLevel(currentLevel + 1); setGameState('playing') }}>Next Level</button>
+              <button 
+                onClick={() => { setCurrentLevel(prev => prev + 1); initializeLevel(currentLevel + 1); setGameState('playing') }}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  background: 'linear-gradient(45deg, #10b981, #059669)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 4px 15px rgba(16, 185, 129, 0.3)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(16, 185, 129, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(16, 185, 129, 0.3)';
+                }}
+              >
+                Next Level →
+              </button>
             ) : (
-              <button onClick={() => setGameState('levelSelect')}>Level Select</button>
+              <button 
+                onClick={() => setGameState('levelSelect')}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  background: 'linear-gradient(45deg, #10b981, #059669)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 4px 15px rgba(16, 185, 129, 0.3)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(16, 185, 129, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(16, 185, 129, 0.3)';
+                }}
+              >
+                Level Select
+              </button>
             )}
-            <button onClick={() => setGameState('levelSelect')}>Back to Levels</button>
+            <button 
+              onClick={() => setGameState('levelSelect')}
+              style={{
+                padding: '0.75rem 1.5rem',
+                fontSize: '1rem',
+                fontWeight: '600',
+                background: 'linear-gradient(45deg, #6b7280, #4b5563)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                boxShadow: '0 4px 15px rgba(107, 114, 128, 0.3)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(107, 114, 128, 0.4)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 4px 15px rgba(107, 114, 128, 0.3)';
+              }}
+            >
+              Back to Levels
+            </button>
           </div>
         </div>
+        
+        <style>{`
+          @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+          }
+        `}</style>
       </div>
     )
   }
 
   if (gameState === 'gameOver') {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(to bottom, #7f1d1d, #111827, #000)' }}>
-        <div style={{ background: '#1f2937', color: 'white', padding: 16, borderRadius: 8 }}>
-          <div style={{ fontWeight: 700, marginBottom: 8 }}>Game Over</div>
-          <div style={{ marginBottom: 12 }}>The {levels[currentLevel].name} claimed another victim...</div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={() => { initializeLevel(currentLevel); setGameState('playing') }}>Try Again</button>
-            <button onClick={() => setGameState('levelSelect')}>Level Select</button>
+      <div style={{ 
+        minHeight: '100vh', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        background: 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 25%, #dc2626 50%, #111827 75%, #000000 100%)',
+        padding: '1rem'
+      }}>
+        <div style={{ 
+          background: 'rgba(31, 41, 55, 0.95)', 
+          color: 'white', 
+          padding: '3rem 2rem', 
+          borderRadius: '20px',
+          backdropFilter: 'blur(10px)',
+          border: '2px solid rgba(239, 68, 68, 0.3)',
+          boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
+          textAlign: 'center',
+          maxWidth: '500px',
+          width: '100%'
+        }}>
+          <div style={{ 
+            fontSize: '4rem', 
+            marginBottom: '1rem',
+            animation: 'shake 0.5s ease-in-out'
+          }}>
+            💀
+          </div>
+          <div style={{ 
+            fontWeight: 800, 
+            marginBottom: '1rem',
+            fontSize: '2rem',
+            background: 'linear-gradient(45deg, #ef4444, #dc2626)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent'
+          }}>
+            Game Over
+          </div>
+          <div style={{ 
+            marginBottom: '2rem',
+            fontSize: '1.125rem',
+            color: '#d1d5db'
+          }}>
+            The <strong style={{ color: '#ef4444' }}>{levels[currentLevel].name}</strong> claimed another victim...
+          </div>
+          <div style={{ 
+            display: 'flex', 
+            gap: '1rem',
+            flexWrap: 'wrap',
+            justifyContent: 'center'
+          }}>
+            <button 
+              onClick={() => { initializeLevel(currentLevel); setGameState('playing') }}
+              style={{
+                padding: '0.75rem 1.5rem',
+                fontSize: '1rem',
+                fontWeight: '600',
+                background: 'linear-gradient(45deg, #ef4444, #dc2626)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                boxShadow: '0 4px 15px rgba(239, 68, 68, 0.3)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(239, 68, 68, 0.4)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 4px 15px rgba(239, 68, 68, 0.3)';
+              }}
+            >
+              Try Again
+            </button>
+            <button 
+              onClick={() => setGameState('levelSelect')}
+              style={{
+                padding: '0.75rem 1.5rem',
+                fontSize: '1rem',
+                fontWeight: '600',
+                background: 'linear-gradient(45deg, #6b7280, #4b5563)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                boxShadow: '0 4px 15px rgba(107, 114, 128, 0.3)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(107, 114, 128, 0.4)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 4px 15px rgba(107, 114, 128, 0.3)';
+              }}
+            >
+              Level Select
+            </button>
           </div>
         </div>
+        
+        <style>{`
+          @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+          }
+        `}</style>
       </div>
     )
   }
 
   return (
     <div style={{ minHeight: '100vh', background: '#111827' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', padding: 12, background: '#1f2937', color: 'white' }}>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <div style={{ background: '#78350f', padding: '4px 8px', borderRadius: 6 }}>Stones: {player.stones}/{levels[currentLevel].stoneCount}</div>
-          <div style={{ background: '#111827', padding: '4px 8px', borderRadius: 6 }}>
-            Stamina: <span style={{ color: player.stamina > 30 ? '#22c55e' : player.stamina > 10 ? '#f59e0b' : '#ef4444' }}>{Math.round(player.stamina)}%</span>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        padding: '1rem', 
+        background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.95), rgba(17, 24, 39, 0.9))',
+        backdropFilter: 'blur(10px)',
+        borderBottom: '1px solid rgba(75, 85, 99, 0.3)',
+        color: 'white',
+        flexWrap: 'wrap',
+        gap: '1rem'
+      }}>
+        <div style={{ 
+          display: 'flex', 
+          gap: '0.75rem',
+          flexWrap: 'wrap',
+          alignItems: 'center'
+        }}>
+          <div style={{ 
+            background: 'linear-gradient(45deg, #fbbf24, #f59e0b)', 
+            padding: '0.5rem 1rem', 
+            borderRadius: '12px',
+            fontWeight: '600',
+            color: '#000',
+            boxShadow: '0 2px 8px rgba(251, 191, 36, 0.3)'
+          }}>
+            💎 {player.stones}/{levels[currentLevel].stoneCount}
           </div>
-          <div style={{ background: '#1d4ed8', padding: '4px 8px', borderRadius: 6 }}>Lives: {player.lives}</div>
+          <div style={{ 
+            background: 'linear-gradient(45deg, #111827, #374151)', 
+            padding: '0.5rem 1rem', 
+            borderRadius: '12px',
+            fontWeight: '600',
+            border: '1px solid rgba(75, 85, 99, 0.3)'
+          }}>
+            ⚡ <span style={{ color: player.stamina > 30 ? '#22c55e' : player.stamina > 10 ? '#f59e0b' : '#ef4444' }}>{Math.round(player.stamina)}%</span>
+          </div>
+          <div style={{ 
+            background: 'linear-gradient(45deg, #1d4ed8, #1e40af)', 
+            padding: '0.5rem 1rem', 
+            borderRadius: '12px',
+            fontWeight: '600',
+            boxShadow: '0 2px 8px rgba(29, 78, 216, 0.3)'
+          }}>
+            ❤️ {player.lives}
+          </div>
           {player.hasAxe && (
-            <div style={{ background: '#6b7280', padding: '4px 8px', borderRadius: 6 }}>Axe Owned</div>
+            <div style={{ 
+              background: 'linear-gradient(45deg, #6b7280, #4b5563)', 
+              padding: '0.5rem 1rem', 
+              borderRadius: '12px',
+              fontWeight: '600',
+              boxShadow: '0 2px 8px rgba(107, 114, 128, 0.3)'
+            }}>
+              🪓 Axe
+            </div>
           )}
-          <div>{levels[currentLevel].name}</div>
+          <div style={{
+            background: 'rgba(75, 85, 99, 0.2)',
+            padding: '0.5rem 1rem',
+            borderRadius: '12px',
+            fontWeight: '600',
+            fontSize: '0.875rem',
+            color: '#d1d5db'
+          }}>
+            {levels[currentLevel].name}
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={() => setShowMinimap(v => !v)}>Map</button>
-          <button onClick={() => setGameState('paused')}>Pause</button>
-          <button onClick={() => {
-            // Place campfire if enough wood and cooldown elapsed
-            const now = gameTime
-            if (wood >= 3 && now - lastCampfireTimeRef.current > 60) {
-              lastCampfireTimeRef.current = now
-              setWood(w => w - 3)
-              setCampfires(prev => [...prev, { x: player.x, y: player.y, life: 1800 }])
-              ensureAudio(); playSound('portal')
-            }
-          }}>Campfire (3 wood)</button>
+        <div style={{ 
+          display: 'flex', 
+          gap: '0.5rem',
+          flexWrap: 'wrap'
+        }}>
+          <button 
+            onClick={() => setShowMinimap(v => !v)}
+            style={{
+              padding: '0.5rem 1rem',
+              background: showMinimap ? 'linear-gradient(45deg, #10b981, #059669)' : 'linear-gradient(45deg, #6b7280, #4b5563)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+              fontWeight: '600',
+              transition: 'all 0.3s ease',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-1px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+          >
+            🗺️ Map
+          </button>
+          <button 
+            onClick={() => setGameState('paused')}
+            style={{
+              padding: '0.5rem 1rem',
+              background: 'linear-gradient(45deg, #6b7280, #4b5563)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+              fontWeight: '600',
+              transition: 'all 0.3s ease',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-1px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+          >
+            ⏸️ Pause
+          </button>
+          <button 
+            onClick={() => {
+              // Place campfire if enough wood and cooldown elapsed
+              const now = gameTime
+              if (wood >= 3 && now - lastCampfireTimeRef.current > 60) {
+                lastCampfireTimeRef.current = now
+                setWood(w => w - 3)
+                setCampfires(prev => [...prev, { x: player.x, y: player.y, life: 1800 }])
+                ensureAudio(); playSound('portal')
+              }
+            }}
+            style={{
+              padding: '0.5rem 1rem',
+              background: wood >= 3 ? 'linear-gradient(45deg, #f59e0b, #d97706)' : 'linear-gradient(45deg, #6b7280, #4b5563)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: wood >= 3 ? 'pointer' : 'not-allowed',
+              fontSize: '0.875rem',
+              fontWeight: '600',
+              transition: 'all 0.3s ease',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+              opacity: wood >= 3 ? 1 : 0.6
+            }}
+            onMouseEnter={(e) => {
+              if (wood >= 3) {
+                e.currentTarget.style.transform = 'translateY(-1px)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+          >
+            🔥 Campfire ({wood}/3)
+          </button>
         </div>
       </div>
 
@@ -841,53 +1752,252 @@ export default function Game() {
         {isTouchMode && (
           <>
             <div
-              style={{ position: 'absolute', left: 16, bottom: 24, width: 144, height: 144, borderRadius: 9999, border: '1px solid rgba(255,255,255,0.2)' }}
+              style={{ 
+                position: 'absolute', 
+                left: '1rem', 
+                bottom: '1rem', 
+                width: '120px', 
+                height: '120px', 
+                borderRadius: '9999px', 
+                border: '2px solid rgba(255,255,255,0.3)',
+                background: 'rgba(0,0,0,0.2)',
+                backdropFilter: 'blur(10px)',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
+              }}
               onTouchStart={(e) => { const t = e.touches[0]; const rect = (e.target as HTMLElement).getBoundingClientRect(); const x = t.clientX - rect.left; const y = t.clientY - rect.top; setJoystickStart({ x, y }); setJoystickPos({ x, y }); setJoystickActive(true) }}
               onTouchMove={(e) => { const t = e.touches[0]; const rect = (e.target as HTMLElement).getBoundingClientRect(); const x = t.clientX - rect.left; const y = t.clientY - rect.top; setJoystickPos({ x, y }) }}
               onTouchEnd={() => { setJoystickActive(false); setJoystickStart(null) }}
             >
               {joystickStart && (
-                <div style={{ position: 'absolute', left: joystickPos.x, top: joystickPos.y, width: 48, height: 48, transform: 'translate(-50%, -50%)', borderRadius: 9999, background: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.6)' }} />
+                <div style={{ 
+                  position: 'absolute', 
+                  left: joystickPos.x, 
+                  top: joystickPos.y, 
+                  width: '40px', 
+                  height: '40px', 
+                  transform: 'translate(-50%, -50%)', 
+                  borderRadius: '9999px', 
+                  background: 'linear-gradient(45deg, rgba(255,255,255,0.8), rgba(255,255,255,0.6))', 
+                  border: '2px solid rgba(255,255,255,0.9)',
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.3)'
+                }} />
               )}
             </div>
 
-            <div style={{ position: 'absolute', right: 16, bottom: 24, display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <button onClick={() => setGameState('paused')} style={{ width: 48, height: 48, borderRadius: 9999 }}>II</button>
-              <button onClick={() => setShowMinimap(v => !v)} style={{ width: 48, height: 48, borderRadius: 9999 }}>M</button>
+            <div style={{ 
+              position: 'absolute', 
+              right: '1rem', 
+              bottom: '1rem', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: '0.75rem' 
+            }}>
+              <button 
+                onClick={() => setGameState('paused')} 
+                style={{ 
+                  width: '56px', 
+                  height: '56px', 
+                  borderRadius: '9999px',
+                  background: 'linear-gradient(45deg, rgba(107, 114, 128, 0.8), rgba(75, 85, 99, 0.8))',
+                  border: '2px solid rgba(255,255,255,0.3)',
+                  color: 'white',
+                  fontSize: '1.25rem',
+                  fontWeight: '600',
+                  backdropFilter: 'blur(10px)',
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'scale(1.05)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+              >
+                ⏸️
+              </button>
+              <button 
+                onClick={() => setShowMinimap(v => !v)} 
+                style={{ 
+                  width: '56px', 
+                  height: '56px', 
+                  borderRadius: '9999px',
+                  background: showMinimap 
+                    ? 'linear-gradient(45deg, rgba(16, 185, 129, 0.8), rgba(5, 150, 105, 0.8))'
+                    : 'linear-gradient(45deg, rgba(107, 114, 128, 0.8), rgba(75, 85, 99, 0.8))',
+                  border: '2px solid rgba(255,255,255,0.3)',
+                  color: 'white',
+                  fontSize: '1.25rem',
+                  fontWeight: '600',
+                  backdropFilter: 'blur(10px)',
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'scale(1.05)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+              >
+                🗺️
+              </button>
               <button 
                 onTouchStart={() => setSprintHeldTouch(true)} 
                 onTouchEnd={() => setSprintHeldTouch(false)}
                 style={{ 
-                  width: 48, 
-                  height: 48, 
-                  borderRadius: 9999, 
-                  background: sprintHeldTouch ? '#22c55e' : '#374151',
-                  color: 'white'
+                  width: '56px', 
+                  height: '56px', 
+                  borderRadius: '9999px', 
+                  background: sprintHeldTouch 
+                    ? 'linear-gradient(45deg, rgba(34, 197, 94, 0.8), rgba(22, 163, 74, 0.8))'
+                    : 'linear-gradient(45deg, rgba(107, 114, 128, 0.8), rgba(75, 85, 99, 0.8))',
+                  border: '2px solid rgba(255,255,255,0.3)',
+                  color: 'white',
+                  fontSize: '1.25rem',
+                  fontWeight: '600',
+                  backdropFilter: 'blur(10px)',
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'scale(1.05)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
                 }}
               >
-                S
+                ⚡
               </button>
             </div>
           </>
         )}
 
         {showMinimap && (
-          <div style={{ position: 'absolute', right: 16, top: 16, background: '#1f2937', padding: 8, borderRadius: 8 }}>
-            <div style={{ position: 'relative', width: 128, height: 128, background: '#111827', border: '1px solid #4b5563', borderRadius: 8 }}>
-              <div style={{ position: 'absolute', width: 8, height: 8, borderRadius: 9999, background: '#3b82f6', left: `${(player.x / WORLD_WIDTH) * 128 - 4}px`, top: `${(player.y / WORLD_HEIGHT) * 128 - 4}px` }} />
-              <div style={{ position: 'absolute', width: 12, height: 12, borderRadius: 9999, background: '#a855f7', left: `${(WORLD_WIDTH / 2 / WORLD_WIDTH) * 128 - 6}px`, top: `${(WORLD_HEIGHT / 2 / WORLD_HEIGHT) * 128 - 6}px` }} />
+          <div style={{ 
+            position: 'absolute', 
+            right: '1rem', 
+            top: '1rem', 
+            background: 'rgba(31, 41, 55, 0.95)', 
+            padding: '1rem', 
+            borderRadius: '16px',
+            backdropFilter: 'blur(10px)',
+            border: '2px solid rgba(75, 85, 99, 0.3)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
+          }}>
+            <div style={{ 
+              position: 'relative', 
+              width: '160px', 
+              height: '160px', 
+              background: 'linear-gradient(135deg, #111827, #1f2937)', 
+              border: '2px solid rgba(75, 85, 99, 0.5)', 
+              borderRadius: '12px',
+              overflow: 'hidden'
+            }}>
+              <div style={{ 
+                position: 'absolute', 
+                width: '12px', 
+                height: '12px', 
+                borderRadius: '9999px', 
+                background: 'linear-gradient(45deg, #3b82f6, #1d4ed8)', 
+                left: `${(player.x / WORLD_WIDTH) * 160 - 6}px`, 
+                top: `${(player.y / WORLD_HEIGHT) * 160 - 6}px`,
+                boxShadow: '0 0 8px rgba(59, 130, 246, 0.6)',
+                border: '2px solid rgba(255, 255, 255, 0.8)'
+              }} />
+              <div style={{ 
+                position: 'absolute', 
+                width: '16px', 
+                height: '16px', 
+                borderRadius: '9999px', 
+                background: 'linear-gradient(45deg, #a855f7, #7c3aed)', 
+                left: `${(WORLD_WIDTH / 2 / WORLD_WIDTH) * 160 - 8}px`, 
+                top: `${(WORLD_HEIGHT / 2 / WORLD_HEIGHT) * 160 - 8}px`,
+                boxShadow: '0 0 8px rgba(168, 85, 247, 0.6)',
+                border: '2px solid rgba(255, 255, 255, 0.8)'
+              }} />
               {stones.map(stone => !stone.collected && (
-                <div key={stone.id} style={{ position: 'absolute', width: 8, height: 8, borderRadius: 9999, background: '#eab308', left: `${(stone.x / WORLD_WIDTH) * 128 - 4}px`, top: `${(stone.y / WORLD_HEIGHT) * 128 - 4}px` }} />
+                <div key={stone.id} style={{ 
+                  position: 'absolute', 
+                  width: '8px', 
+                  height: '8px', 
+                  borderRadius: '9999px', 
+                  background: 'linear-gradient(45deg, #fbbf24, #f59e0b)', 
+                  left: `${(stone.x / WORLD_WIDTH) * 160 - 4}px`, 
+                  top: `${(stone.y / WORLD_HEIGHT) * 160 - 4}px`,
+                  boxShadow: '0 0 4px rgba(251, 191, 36, 0.6)'
+                }} />
               ))}
               {enemies.map(enemy => (
-                <div key={enemy.id} style={{ position: 'absolute', width: 8, height: 8, borderRadius: 9999, background: '#ef4444', left: `${(enemy.x / WORLD_WIDTH) * 128 - 4}px`, top: `${(enemy.y / WORLD_HEIGHT) * 128 - 4}px` }} />
+                <div key={enemy.id} style={{ 
+                  position: 'absolute', 
+                  width: '8px', 
+                  height: '8px', 
+                  borderRadius: '9999px', 
+                  background: 'linear-gradient(45deg, #ef4444, #dc2626)', 
+                  left: `${(enemy.x / WORLD_WIDTH) * 160 - 4}px`, 
+                  top: `${(enemy.y / WORLD_HEIGHT) * 160 - 4}px`,
+                  boxShadow: '0 0 4px rgba(239, 68, 68, 0.6)'
+                }} />
               ))}
+            </div>
+            <div style={{
+              marginTop: '0.5rem',
+              fontSize: '0.75rem',
+              color: '#9ca3af',
+              textAlign: 'center',
+              lineHeight: '1.4'
+            }}>
+              <div>🔵 You</div>
+              <div>🟣 Portal</div>
+              <div>🟡 Stones</div>
+              <div>🔴 Enemies</div>
             </div>
           </div>
         )}
       </div>
 
-      <div style={{ textAlign: 'center', padding: 12, color: '#9ca3af', background: '#1f2937' }}>Use WASD to move • Shift to sprint • Mouse to look • Space to chop (axe) • Click to shoot (if gun) • Campfire button places distraction (costs 3 wood)</div>
+      <div style={{ 
+        textAlign: 'center', 
+        padding: '1rem', 
+        color: '#9ca3af', 
+        background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.95), rgba(17, 24, 39, 0.9))',
+        backdropFilter: 'blur(10px)',
+        borderTop: '1px solid rgba(75, 85, 99, 0.3)',
+        fontSize: 'clamp(0.75rem, 2vw, 0.875rem)',
+        lineHeight: '1.6'
+      }}>
+        <div style={{ 
+          display: 'flex', 
+          flexWrap: 'wrap', 
+          justifyContent: 'center', 
+          gap: '1rem',
+          maxWidth: '1200px',
+          margin: '0 auto'
+        }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            <span style={{ color: '#3b82f6' }}>WASD</span> Move
+          </span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            <span style={{ color: '#10b981' }}>Shift</span> Sprint
+          </span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            <span style={{ color: '#f59e0b' }}>Mouse</span> Look
+          </span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            <span style={{ color: '#ef4444' }}>Space</span> Chop
+          </span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            <span style={{ color: '#8b5cf6' }}>Click</span> Shoot
+          </span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            <span style={{ color: '#f97316' }}>🔥</span> Campfire
+          </span>
+        </div>
+      </div>
     </div>
   )
 }
